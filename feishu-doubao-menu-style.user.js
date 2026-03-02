@@ -272,6 +272,40 @@
         min-height: 16px !important;
         max-height: 16px !important;
       }
+      
+      /* 自定义title气泡样式 */
+      .semi-dropdown-item {
+        position: relative !important;
+      }
+      
+      .semi-dropdown-item:hover::before {
+        content: attr(title) !important;
+        position: absolute !important;
+        bottom: 100% !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        background-color: rgba(0, 0, 0, 0.8) !important;
+        color: white !important;
+        padding: 4px 8px !important;
+        border-radius: 4px !important;
+        font-size: 12px !important;
+        white-space: nowrap !important;
+        z-index: 10000 !important;
+        margin-bottom: 4px !important;
+      }
+      
+      .semi-dropdown-item:hover::after {
+        content: '' !important;
+        position: absolute !important;
+        bottom: 100% !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        border-width: 4px !important;
+        border-style: solid !important;
+        border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent !important;
+        margin-bottom: -8px !important;
+        z-index: 10000 !important;
+      }
 
 
     `;
