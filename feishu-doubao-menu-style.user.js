@@ -14,6 +14,7 @@
 
     // 使用Tampermonkey的GM_log功能
     function log(message) {
+        
         if (typeof GM_log === 'function') {
             const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
             GM_log(`[${timestamp}] ${message}`);
@@ -146,6 +147,12 @@
                         return;
                     }
                     professionalTranslateIcon.innerHTML = translateIcon.innerHTML;
+                    // 为里面的span增加style color: var(--primary-content-default);
+                    const span = professionalTranslateIcon.querySelector('span');
+                    if (span) {
+                        span.style.color = 'var(--primary-content-default)';
+                    }
+
                     log('✅ 已将"专业中文翻译"的图标替换为"翻译"的图标');
                 }
             }
@@ -246,6 +253,7 @@
                     if (!portalInner) {
                         // 如果不存在semi-portal-inner，点击下拉按钮
                         dropdownBtn.click();
+                        dropdownBtn.setAttribute('style', 'display: none !important;');
                         log('.semi-portal-inner不存在，已点击下拉按钮展开菜单');
                     }
                 }
@@ -253,6 +261,31 @@
 
             // 首次检查
             monitorDropdownButton();
+
+            // 删除class*=doubao_tools_container div中的class*=click_buttion-的div
+            async function removeClickButtonDiv() {
+                try {
+                    // 等待doubao_tools_container出现
+                    const doubaoToolsContainer = await waitForElement('[class*="doubao_tools_container"]', shadowRoot);
+                    log('找到doubao_tools_container');
+
+                    if (!doubaoToolsContainer.innerHTML.includes('click_button')) {
+                        log('✅ click_buttion元素已经被删除');
+                        return;
+                    }
+
+                    // 等待click_buttion-元素出现
+                    const clickButton = await waitForElement('[class*="click_button"]', doubaoToolsContainer);
+                    // 删除元素
+                    clickButton.remove();
+                    log('✅ 已删除doubao_tools_container中的click_buttion的div');
+                } catch (err) {
+                    log('删除click_buttion-元素失败: ' + err.message);
+                }
+            }
+
+            // 首次执行删除操作
+            removeClickButtonDiv();
 
             // 初始化菜单项管理
             const menuManager = initializeMenuItems(shadowRoot);
@@ -281,6 +314,7 @@
                 if (hasContentChange) {
                     log('DOM内容发生变化，更新菜单状态');
                     monitorDropdownButton();
+                    removeClickButtonDiv();
                     menuManager.update();
                 }
             });
