@@ -15,7 +15,8 @@
     // 使用Tampermonkey的GM_log功能
     function log(message) {
         if (typeof GM_log === 'function') {
-            GM_log(message);
+            const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            GM_log(`[${timestamp}] ${message}`);
         }
     }
 
@@ -63,15 +64,12 @@
 
         // 状态标记
         const state = {
-            initialized: false,
-            iconReplaced: false,
-            menuSorted: false
+            initialized: false
         };
 
         // 更新菜单项：设置data-title和隐藏指定项
         function updateMenuItems() {
             const menuItemNames = shadowRoot.querySelectorAll('.menu-item-name');
-            log(`【调试】找到.menu-item-name元素数量：${menuItemNames.length}`);
 
             menuItemNames.forEach(span => {
                 const li = span.closest('li');
@@ -82,6 +80,7 @@
 
                 // 检查是否已经处理过该菜单项
                 if (li._menuItemProcessed) {
+                    log(`✅ data-tile及隐藏已处理过，无需再处理`);
                     return;
                 }
 
@@ -95,15 +94,12 @@
                 // 检查是否需要隐藏该li元素
                 if (config.hiddenItems.includes(titleText)) {
                     li.setAttribute('style', 'display: none !important;');
-                    log(`【调试】✅ 隐藏菜单项：${titleText}`);
                     li._menuItemProcessed = true;
                     return;
                 }
 
-                // 移除原生title属性，使用自定义数据属性存储title内容
-                li.removeAttribute('title');
                 li.setAttribute('data-title', titleText);
-                log(`【调试】✅ 设置data-title成功：${titleText}，li的class：${li.className}`);
+                log(`✅ 设置data-title成功：${titleText}，li的class：${li.className}`);
                 li._menuItemProcessed = true;
             });
         }
@@ -129,8 +125,6 @@
 
         // 替换菜单项图标
         function replaceMenuItemIcon() {
-            if (state.iconReplaced) return;
-
             // 找到menu-item-name为"翻译"的li元素
             const translateLi = Array.from(shadowRoot.querySelectorAll('.menu-item-name')).find(span =>
                 span.textContent.trim() === '翻译'
@@ -146,26 +140,34 @@
                 const professionalTranslateIcon = professionalTranslateLi.querySelector('.menu-item-icon');
 
                 if (translateIcon && professionalTranslateIcon) {
+                    // 检查professionalTranslateIcon.innerHTML中是否包含svg元素
+                    if (professionalTranslateIcon.innerHTML.includes('<svg')) {
+                        log('✅ 图标已替换过，无需再替换');
+                        return;
+                    }
                     professionalTranslateIcon.innerHTML = translateIcon.innerHTML;
-                    log('【调试】✅ 已将"专业中文翻译"的图标替换为"翻译"的图标');
-                    state.iconReplaced = true;
+                    log('✅ 已将"专业中文翻译"的图标替换为"翻译"的图标');
                 }
             }
         }
 
         // 排序菜单项
         function sortMenuItems() {
-            if (state.menuSorted) return;
-
             const ul = shadowRoot.querySelector('.semi-dropdown-menu');
             if (!ul) {
-                log('【调试】未找到.semi-dropdown-menu元素');
                 return;
             }
 
             const lis = Array.from(ul.querySelectorAll('li'));
             if (lis.length === 0) {
-                log('【调试】未找到li元素');
+                return;
+            }
+
+            // 检查第一个li的menu-item-name是否为sortOrder的第一个
+            const firstLi = lis[0];
+            const firstMenuItemName = firstLi.querySelector('.menu-item-name');
+            if (firstMenuItemName && firstMenuItemName.textContent.trim() === config.sortOrder[0]) {
+                log('✅ 已排序过，无需再排');
                 return;
             }
 
@@ -194,8 +196,7 @@
                 ul.appendChild(li);
             });
 
-            log('【调试】✅ 已按指定顺序排序菜单项');
-            state.menuSorted = true;
+            log('✅ 已按指定顺序排序菜单项');
         }
 
         // 初始化函数
@@ -239,8 +240,6 @@
                 const dropdownBtn = shadowRoot.querySelector('[class*="dropdown_icon_container"]');
 
                 if (dropdownBtn) {
-                    log('找到dropdown_icon_container元素，检查是否需要点击');
-
                     // 检查是否存在semi-portal-inner
                     const portalInner = shadowRoot.querySelector('.semi-portal-inner');
 
@@ -248,9 +247,6 @@
                         // 如果不存在semi-portal-inner，点击下拉按钮
                         dropdownBtn.click();
                         log('.semi-portal-inner不存在，已点击下拉按钮展开菜单');
-                    } else {
-                        // 如果存在semi-portal-inner，无需操作
-                        log('.semi-portal-inner已存在，无需点击下拉按钮');
                     }
                 }
             }
@@ -268,21 +264,6 @@
 
                 mutations.forEach(mutation => {
                     // 跳过与鼠标移动相关的属性变化
-                    if (mutation.type === 'attributes') {
-                        // 跳过style属性变化（可能是tooltip位置变化）
-                        if (mutation.attributeName === 'style') {
-                            // 检查是否是由tooltip定位引起的style变化
-                            const target = mutation.target;
-                            if (target.style && (target.style.getPropertyValue('--tooltip-x') || target.style.getPropertyValue('--tooltip-y'))) {
-                                return; // 跳过tooltip位置变化
-                            }
-                        }
-                        // 跳过class属性变化（可能是hover状态变化）
-                        else if (mutation.attributeName === 'class') {
-                            return; // 跳过hover状态变化
-                        }
-                    }
-
                     // 检查是否有新节点添加
                     if (mutation.addedNodes.length > 0) {
                         hasContentChange = true;
