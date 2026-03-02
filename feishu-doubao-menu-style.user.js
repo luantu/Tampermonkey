@@ -100,87 +100,45 @@
             injectCSS(shadowRoot);
             log('shadowRoot已找到，已优先注入CSS样式');
 
-            // 步骤2：检查.semi-portal-inner是否存在
-            let portalInner = null;
-            try {
-                // 尝试查找.semi-portal-inner（无超时，仅快速检查）
-                portalInner = shadowRoot.querySelector('.semi-portal-inner');
-                // 如果没找到，再通过waitForElement等待（兼容元素延迟生成）
-                if (!portalInner) {
-                    portalInner = await waitForElement('.semi-portal-inner', shadowRoot);
-                }
-            } catch (e) {
-                // 即使portalInner没找到，也不影响后续逻辑
-                log('.semi-portal-inner暂未找到，准备点击下拉按钮');
-            }
-
-            // 核心修改2：仅当.semi-portal-inner不存在时，才点击下拉按钮
-            const dropdownBtn = await waitForElement('[class*="dropdown_icon_container"]', shadowRoot);
-            
-            // 检查并点击下拉按钮的函数
-            function checkAndClickDropdown() {
-                const currentPortalInner = shadowRoot.querySelector('.semi-portal-inner');
-                if (dropdownBtn && !currentPortalInner) {
-                    dropdownBtn.click(); // 仅不存在portalInner时点击
-                    log('.semi-portal-inner不存在，已点击下拉按钮展开菜单');
-                } else if (dropdownBtn && currentPortalInner) {
-                    log('.semi-portal-inner已存在，无需点击下拉按钮');
+            // 核心逻辑：持续监控dropdown_icon_container元素的变化
+            function monitorDropdownButton() {
+                // 查找dropdown_icon_container元素
+                const dropdownBtn = shadowRoot.querySelector('[class*="dropdown_icon_container"]');
+                
+                if (dropdownBtn) {
+                    log('找到dropdown_icon_container元素，检查是否需要点击');
+                    
+                    // 检查是否存在semi-portal-inner
+                    const portalInner = shadowRoot.querySelector('.semi-portal-inner');
+                    
+                    if (!portalInner) {
+                        // 如果不存在semi-portal-inner，点击下拉按钮
+                        dropdownBtn.click();
+                        log('.semi-portal-inner不存在，已点击下拉按钮展开菜单');
+                    } else {
+                        // 如果存在semi-portal-inner，无需操作
+                        log('.semi-portal-inner已存在，无需点击下拉按钮');
+                    }
                 }
             }
             
             // 首次检查
-            checkAndClickDropdown();
+            monitorDropdownButton();
             
-            // 持续监听dropdownBtn元素的变化
-            const dropdownObserver = new MutationObserver((mutations) => {
-                log('dropdown_icon_container元素发生变化，重新检查是否需要点击');
-                checkAndClickDropdown();
+            // 持续监听shadowRoot，当dropdown_icon_container元素出现或变化时检查
+            const observer = new MutationObserver((mutations) => {
+                log('DOM发生变化，检查dropdown_icon_container元素');
+                monitorDropdownButton();
             });
             
-            // 监听dropdownBtn元素的变化
-            dropdownObserver.observe(dropdownBtn, {
-                attributes: true,
+            // 监听shadowRoot的所有变化
+            observer.observe(shadowRoot, {
                 childList: true,
-                subtree: true
+                subtree: true,
+                attributes: true
             });
             
-            log('已启动dropdown_icon_container元素监听');
-            
-            // 同时监听semi-portal-inner元素的变化，以便在菜单关闭时重新点击
-            const portalObserver = new MutationObserver((mutations) => {
-                log('semi-portal-inner元素发生变化，重新检查是否需要点击');
-                checkAndClickDropdown();
-            });
-            
-            // 监听semi-portal-inner元素的变化（如果存在）
-            if (portalInner) {
-                portalObserver.observe(portalInner, {
-                    attributes: true,
-                    childList: true,
-                    subtree: true
-                });
-                log('已启动semi-portal-inner元素监听');
-            } else {
-                // 如果semi-portal-inner不存在，监听shadowRoot以捕获其创建
-                const shadowRootObserver = new MutationObserver((mutations) => {
-                    const newPortalInner = shadowRoot.querySelector('.semi-portal-inner');
-                    if (newPortalInner) {
-                        log('semi-portal-inner元素已创建，开始监听');
-                        portalObserver.observe(newPortalInner, {
-                            attributes: true,
-                            childList: true,
-                            subtree: true
-                        });
-                        shadowRootObserver.disconnect();
-                    }
-                });
-                
-                shadowRootObserver.observe(shadowRoot, {
-                    childList: true,
-                    subtree: true
-                });
-                log('已启动shadowRoot监听，等待semi-portal-inner创建');
-            }
+            log('已启动持续监听，监控dropdown_icon_container元素的变化');
 
             setupLiTitleObserver(shadowRoot); // 核心：启动title监听
 
