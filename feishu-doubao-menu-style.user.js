@@ -316,9 +316,9 @@
         z-index: 999999 !important;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
         pointer-events: none !important;
-        /* 使用transform定位，再往上移5个px */
+        /* 使用transform定位，再往上移4个px */
         transform: translate(-50%, -100%) !important;
-        margin-top: -13px !important;
+        margin-top: -12px !important;
       }
       
       /* 禁用原生的title信息显示 */
