@@ -218,6 +218,8 @@
                 updateMenuItems();
                 setupTooltipPositioning();
                 replaceMenuItemIcon();
+                // 重置排序状态，确保每次更新都能重新排序
+                state.menuSorted = false;
                 sortMenuItems();
             }
         };
@@ -251,6 +253,19 @@
                     } else {
                         // 如果存在semi-portal-inner，无需操作
                         log('.semi-portal-inner已存在，无需点击下拉按钮');
+                    }
+                    
+                    // 为按钮添加点击事件监听器，确保手动点击后也能执行菜单初始化
+                    if (!dropdownBtn._hasClickHandler) {
+                        dropdownBtn.addEventListener('click', () => {
+                            log('dropdown_icon_container按钮被手动点击，重新初始化菜单');
+                            // 延迟执行，确保菜单完全展开
+                            setTimeout(() => {
+                                menuManager.update();
+                            }, 100);
+                        });
+                        dropdownBtn._hasClickHandler = true;
+                        log('已为dropdown_icon_container按钮添加点击事件监听器');
                     }
                 }
             }
