@@ -276,6 +276,7 @@
       /* 自定义title气泡样式 */
       .semi-dropdown-item {
         position: relative !important;
+        z-index: 1000 !important;
       }
       
       .semi-dropdown-item:hover::before {
@@ -284,14 +285,16 @@
         bottom: 100% !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
-        background-color: rgba(0, 0, 0, 0.8) !important;
+        background-color: rgba(0, 0, 0, 0.9) !important;
         color: white !important;
-        padding: 4px 8px !important;
-        border-radius: 4px !important;
+        padding: 6px 10px !important;
+        border-radius: 6px !important;
         font-size: 12px !important;
         white-space: nowrap !important;
-        z-index: 10000 !important;
-        margin-bottom: 4px !important;
+        z-index: 99999 !important;
+        margin-bottom: 8px !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+        pointer-events: none !important;
       }
       
       .semi-dropdown-item:hover::after {
@@ -300,11 +303,23 @@
         bottom: 100% !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
-        border-width: 4px !important;
+        border-width: 5px !important;
         border-style: solid !important;
-        border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent !important;
-        margin-bottom: -8px !important;
-        z-index: 10000 !important;
+        border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent !important;
+        margin-bottom: -10px !important;
+        z-index: 99998 !important;
+        pointer-events: none !important;
+      }
+      
+      /* 确保气泡不会被父元素遮挡 */
+      .semi-dropdown-menu {
+        overflow: visible !important;
+        z-index: 1000 !important;
+      }
+      
+      .semi-tooltip-content {
+        overflow: visible !important;
+        z-index: 1000 !important;
       }
 
 
