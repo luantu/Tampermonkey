@@ -102,8 +102,14 @@
             });
         }
 
-        // 替换菜单项图标
+        // 替换菜单项图标（仅替换一次）
+        let iconReplaced = false;
         function replaceMenuItemIcon() {
+            // 如果已经替换过，不再重复替换
+            if (iconReplaced) {
+                return;
+            }
+            
             // 找到menu-item-name为"翻译"的li元素
             const translateLi = Array.from(shadowRoot.querySelectorAll('.menu-item-name')).find(span => 
                 span.textContent.trim() === '翻译'
@@ -124,6 +130,8 @@
                     // 替换内容
                     professionalTranslateIcon.innerHTML = translateIcon.innerHTML;
                     log('【调试】✅ 已将"专业中文翻译"的图标替换为"翻译"的图标');
+                    // 标记为已替换
+                    iconReplaced = true;
                 }
             }
         }
