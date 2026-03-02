@@ -60,14 +60,14 @@
                 '复制'
             ]
         };
-        
+
         // 状态标记
         const state = {
             initialized: false,
             iconReplaced: false,
             menuSorted: false
         };
-        
+
         // 更新菜单项：设置data-title和隐藏指定项
         function updateMenuItems() {
             const menuItemNames = shadowRoot.querySelectorAll('.menu-item-name');
@@ -118,7 +118,7 @@
                         const rect = item.getBoundingClientRect();
                         const tooltipX = rect.left + rect.width / 2;
                         const tooltipY = rect.top;
-                        
+
                         item.style.setProperty('--tooltip-x', tooltipX + 'px');
                         item.style.setProperty('--tooltip-y', tooltipY + 'px');
                     });
@@ -130,21 +130,21 @@
         // 替换菜单项图标
         function replaceMenuItemIcon() {
             if (state.iconReplaced) return;
-            
+
             // 找到menu-item-name为"翻译"的li元素
-            const translateLi = Array.from(shadowRoot.querySelectorAll('.menu-item-name')).find(span => 
+            const translateLi = Array.from(shadowRoot.querySelectorAll('.menu-item-name')).find(span =>
                 span.textContent.trim() === '翻译'
             )?.closest('li');
-            
+
             // 找到menu-item-name为"专业中文翻译"的li元素
-            const professionalTranslateLi = Array.from(shadowRoot.querySelectorAll('.menu-item-name')).find(span => 
+            const professionalTranslateLi = Array.from(shadowRoot.querySelectorAll('.menu-item-name')).find(span =>
                 span.textContent.trim() === '专业中文翻译'
             )?.closest('li');
-            
+
             if (translateLi && professionalTranslateLi) {
                 const translateIcon = translateLi.querySelector('.menu-item-icon');
                 const professionalTranslateIcon = professionalTranslateLi.querySelector('.menu-item-icon');
-                
+
                 if (translateIcon && professionalTranslateIcon) {
                     professionalTranslateIcon.innerHTML = translateIcon.innerHTML;
                     log('【调试】✅ 已将"专业中文翻译"的图标替换为"翻译"的图标');
@@ -152,23 +152,23 @@
                 }
             }
         }
-        
+
         // 排序菜单项
         function sortMenuItems() {
             if (state.menuSorted) return;
-            
+
             const ul = shadowRoot.querySelector('.semi-dropdown-menu');
             if (!ul) {
                 log('【调试】未找到.semi-dropdown-menu元素');
                 return;
             }
-            
+
             const lis = Array.from(ul.querySelectorAll('li'));
             if (lis.length === 0) {
                 log('【调试】未找到li元素');
                 return;
             }
-            
+
             // 为每个li元素获取menu-item-name文本
             const lisWithNames = lis.map(li => {
                 const menuItemName = li.querySelector('.menu-item-name');
@@ -177,7 +177,7 @@
                     name: menuItemName ? menuItemName.textContent.trim() : ''
                 };
             });
-            
+
             // 按指定顺序排序
             lisWithNames.sort((a, b) => {
                 const indexA = config.sortOrder.indexOf(a.name);
@@ -188,12 +188,12 @@
                 if (indexB === -1) return -1;
                 return indexA - indexB;
             });
-            
+
             // 重新排列li元素
             lisWithNames.forEach(({ li }) => {
                 ul.appendChild(li);
             });
-            
+
             log('【调试】✅ 已按指定顺序排序菜单项');
             state.menuSorted = true;
         }
@@ -201,18 +201,18 @@
         // 初始化函数
         function init() {
             if (state.initialized) return;
-            
+
             updateMenuItems();
             setupTooltipPositioning();
             replaceMenuItemIcon();
             sortMenuItems();
-            
+
             state.initialized = true;
         }
 
         // 立即执行初始化
         init();
-        
+
         return {
             update: function() {
                 updateMenuItems();
@@ -252,8 +252,6 @@
                         // 如果存在semi-portal-inner，无需操作
                         log('.semi-portal-inner已存在，无需点击下拉按钮');
                     }
-                    
-
                 }
             }
 
@@ -262,18 +260,12 @@
 
             // 初始化菜单项管理
             const menuManager = initializeMenuItems(shadowRoot);
-            
+
             // 持续监听shadowRoot，处理所有变化
-            let isUpdating = false;
             const observer = new MutationObserver((mutations) => {
-                // 防止递归调用
-                if (isUpdating) {
-                    return;
-                }
-                
                 // 检查是否有实际的内容变化（排除鼠标移动引起的变化）
                 let hasContentChange = false;
-                
+
                 mutations.forEach(mutation => {
                     // 跳过与鼠标移动相关的属性变化
                     if (mutation.type === 'attributes') {
@@ -289,21 +281,11 @@
                         else if (mutation.attributeName === 'class') {
                             return; // 跳过hover状态变化
                         }
-                        // 跳过data-title属性变化（我们自己设置的）
-                        else if (mutation.attributeName === 'data-title') {
-                            return; // 跳过我们自己设置的data-title变化
-                        }
                     }
-                    
+
                     // 检查是否有新节点添加
                     if (mutation.addedNodes.length > 0) {
-                        // 跳过我们自己添加的元素
-                        const hasOurElements = Array.from(mutation.addedNodes).some(node => {
-                            return node._menuItemProcessed || node.id === 'custom-menu-style';
-                        });
-                        if (!hasOurElements) {
-                            hasContentChange = true;
-                        }
+                        hasContentChange = true;
                     }
                     // 检查是否有节点被移除
                     else if (mutation.removedNodes.length > 0) {
@@ -314,22 +296,11 @@
                         hasContentChange = true;
                     }
                 });
-                
+
                 if (hasContentChange) {
                     log('DOM内容发生变化，更新菜单状态');
-                    
-                    // 设置更新标记，防止递归
-                    isUpdating = true;
-                    
-                    try {
-                        monitorDropdownButton();
-                        menuManager.update();
-                    } finally {
-                        // 无论如何都要重置更新标记
-                        setTimeout(() => {
-                            isUpdating = false;
-                        }, 100);
-                    }
+                    monitorDropdownButton();
+                    menuManager.update();
                 }
             });
 
