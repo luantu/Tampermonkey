@@ -63,10 +63,18 @@
                     return;
                 }
 
-                // 核心优化：检查li是否已有非空title，有则跳过
-                const existingTitle = li.getAttribute('title');
+                // 检查是否需要隐藏该li元素
+                const hiddenItems = ['润色语气']; // 要隐藏的菜单项名称
+                if (hiddenItems.includes(titleText)) {
+                    li.style.display = 'none';
+                    log(`【调试】✅ 隐藏菜单项：${titleText}`);
+                    return;
+                }
+
+                // 核心优化：检查li是否已有非空data-title，有则跳过
+                const existingTitle = li.getAttribute('data-title');
                 if (existingTitle && existingTitle.trim() === titleText) {
-                    return; // 已有相同title，直接跳过
+                    return; // 已有相同data-title，直接跳过
                 }
 
                 // 移除原生title属性，使用自定义数据属性存储title内容
@@ -280,10 +288,7 @@
            display: none !important;
       }
 
-      /* 润色语气 */
-      .semi-tooltip-content > ul:nth-of-type(1) > li:nth-of-type(5) {
-           display: none !important;
-      }
+
 
       /* 精准定位：.menu-item-icon 直接子元素中，class以img-wrapper-开头的span */
       .menu-item-icon > span[class^="img-wrapper-"] {
