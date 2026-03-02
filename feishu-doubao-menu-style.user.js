@@ -109,23 +109,23 @@
             if (iconReplaced) {
                 return;
             }
-
+            
             // 找到menu-item-name为"翻译"的li元素
-            const translateLi = Array.from(shadowRoot.querySelectorAll('.menu-item-name')).find(span =>
+            const translateLi = Array.from(shadowRoot.querySelectorAll('.menu-item-name')).find(span => 
                 span.textContent.trim() === '翻译'
             )?.closest('li');
-
+            
             // 找到menu-item-name为"专业中文翻译"的li元素
-            const professionalTranslateLi = Array.from(shadowRoot.querySelectorAll('.menu-item-name')).find(span =>
+            const professionalTranslateLi = Array.from(shadowRoot.querySelectorAll('.menu-item-name')).find(span => 
                 span.textContent.trim() === '专业中文翻译'
             )?.closest('li');
-
+            
             if (translateLi && professionalTranslateLi) {
                 // 获取"翻译"菜单项的menu-item-icon div
                 const translateIcon = translateLi.querySelector('.menu-item-icon');
                 // 获取"专业中文翻译"菜单项的menu-item-icon div
                 const professionalTranslateIcon = professionalTranslateLi.querySelector('.menu-item-icon');
-
+                
                 if (translateIcon && professionalTranslateIcon) {
                     // 替换内容
                     professionalTranslateIcon.innerHTML = translateIcon.innerHTML;
@@ -135,18 +135,84 @@
                 }
             }
         }
+        
+        // 按指定顺序排序li元素（仅排序一次）
+        let liSorted = false;
+        function sortMenuItems() {
+            // 如果已经排序过，不再重复排序
+            if (liSorted) {
+                return;
+            }
+            
+            // 指定的排序顺序
+            const sortOrder = [
+                '专业中文翻译',
+                '朗读',
+                '翻译',
+                '解释',
+                '修正语法',
+                '调整语气',
+                'AI 搜索',
+                '复制'
+            ];
+            
+            // 找到包含li的ul元素
+            const ul = shadowRoot.querySelector('.semi-dropdown-menu');
+            if (!ul) {
+                log('【调试】未找到.semi-dropdown-menu元素');
+                return;
+            }
+            
+            // 获取所有li元素
+            const lis = Array.from(ul.querySelectorAll('li'));
+            if (lis.length === 0) {
+                log('【调试】未找到li元素');
+                return;
+            }
+            
+            // 为每个li元素获取menu-item-name文本
+            const lisWithNames = lis.map(li => {
+                const menuItemName = li.querySelector('.menu-item-name');
+                return {
+                    li,
+                    name: menuItemName ? menuItemName.textContent.trim() : ''
+                };
+            });
+            
+            // 按指定顺序排序
+            lisWithNames.sort((a, b) => {
+                const indexA = sortOrder.indexOf(a.name);
+                const indexB = sortOrder.indexOf(b.name);
+                // 不在排序列表中的元素放在最后
+                if (indexA === -1 && indexB === -1) return 0;
+                if (indexA === -1) return 1;
+                if (indexB === -1) return -1;
+                return indexA - indexB;
+            });
+            
+            // 重新排列li元素
+            lisWithNames.forEach(({ li }) => {
+                ul.appendChild(li);
+            });
+            
+            log('【调试】✅ 已按指定顺序排序菜单项');
+            // 标记为已排序
+            liSorted = true;
+        }
 
         // 立即执行+监听动态变化
         updateLiTitles();
         setupTooltipPositioning();
         replaceMenuItemIcon();
-
+        sortMenuItems();
+        
         const observer = new MutationObserver((mutations) => {
             mutations.forEach(mutation => {
                 if (mutation.addedNodes.length > 0) {
                     updateLiTitles();
                     setupTooltipPositioning();
                     replaceMenuItemIcon();
+                    sortMenuItems();
                 }
             });
         });
