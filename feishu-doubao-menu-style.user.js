@@ -66,7 +66,8 @@
                 // 检查是否需要隐藏该li元素
                 const hiddenItems = ['润色语气']; // 要隐藏的菜单项名称
                 if (hiddenItems.includes(titleText)) {
-                    li.style.display = 'none';
+                    // 使用更强制的方式隐藏li元素，确保不会被其他样式覆盖
+                    li.setAttribute('style', 'display: none !important;');
                     log(`【调试】✅ 隐藏菜单项：${titleText}`);
                     return;
                 }
