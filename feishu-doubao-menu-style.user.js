@@ -44,9 +44,32 @@
         });
     }
 
-    // 修复：给li设置title（适配动态生成元素+去重+详细日志）
-    function setupLiTitleObserver(shadowRoot) {
-        function updateLiTitles() {
+    // 初始化和管理菜单项
+    function initializeMenuItems(shadowRoot) {
+        // 配置项
+        const config = {
+            hiddenItems: ['AI 搜索', '调整语气', '复制'], // 要隐藏的菜单项
+            sortOrder: [ // 菜单项排序顺序
+                '专业中文翻译',
+                '朗读',
+                '翻译',
+                '解释',
+                '修正语法',
+                '调整语气',
+                'AI 搜索',
+                '复制'
+            ]
+        };
+        
+        // 状态标记
+        const state = {
+            initialized: false,
+            iconReplaced: false,
+            menuSorted: false
+        };
+        
+        // 更新菜单项：设置data-title和隐藏指定项
+        function updateMenuItems() {
             const menuItemNames = shadowRoot.querySelectorAll('.menu-item-name');
             log(`【调试】找到.menu-item-name元素数量：${menuItemNames.length}`);
 
@@ -64,18 +87,16 @@
                 }
 
                 // 检查是否需要隐藏该li元素
-                const hiddenItems = ['AI 搜索','调整语气','复制']; // 要隐藏的菜单项名称
-                if (hiddenItems.includes(titleText)) {
-                    // 使用更强制的方式隐藏li元素，确保不会被其他样式覆盖
+                if (config.hiddenItems.includes(titleText)) {
                     li.setAttribute('style', 'display: none !important;');
                     log(`【调试】✅ 隐藏菜单项：${titleText}`);
                     return;
                 }
 
-                // 核心优化：检查li是否已有非空data-title，有则跳过
+                // 检查li是否已有非空data-title，有则跳过
                 const existingTitle = li.getAttribute('data-title');
                 if (existingTitle && existingTitle.trim() === titleText) {
-                    return; // 已有相同data-title，直接跳过
+                    return;
                 }
 
                 // 移除原生title属性，使用自定义数据属性存储title内容
@@ -85,30 +106,28 @@
             });
         }
 
-        // 添加鼠标移动事件来动态定位气泡
+        // 设置气泡定位
         function setupTooltipPositioning() {
             const menuItems = shadowRoot.querySelectorAll('.semi-dropdown-item');
             menuItems.forEach(item => {
-                item.addEventListener('mousemove', (e) => {
-                    // 计算气泡位置
-                    const rect = item.getBoundingClientRect();
-                    const tooltipX = rect.left + rect.width / 2;
-                    const tooltipY = rect.top;
-
-                    // 设置气泡位置
-                    item.style.setProperty('--tooltip-x', tooltipX + 'px');
-                    item.style.setProperty('--tooltip-y', tooltipY + 'px');
-                });
+                // 检查是否已经添加过事件监听器
+                if (!item._hasTooltipListener) {
+                    item.addEventListener('mousemove', (e) => {
+                        const rect = item.getBoundingClientRect();
+                        const tooltipX = rect.left + rect.width / 2;
+                        const tooltipY = rect.top;
+                        
+                        item.style.setProperty('--tooltip-x', tooltipX + 'px');
+                        item.style.setProperty('--tooltip-y', tooltipY + 'px');
+                    });
+                    item._hasTooltipListener = true;
+                }
             });
         }
 
-        // 替换菜单项图标（仅替换一次）
-        let iconReplaced = false;
+        // 替换菜单项图标
         function replaceMenuItemIcon() {
-            // 如果已经替换过，不再重复替换
-            if (iconReplaced) {
-                return;
-            }
+            if (state.iconReplaced) return;
             
             // 找到menu-item-name为"翻译"的li元素
             const translateLi = Array.from(shadowRoot.querySelectorAll('.menu-item-name')).find(span => 
@@ -121,49 +140,27 @@
             )?.closest('li');
             
             if (translateLi && professionalTranslateLi) {
-                // 获取"翻译"菜单项的menu-item-icon div
                 const translateIcon = translateLi.querySelector('.menu-item-icon');
-                // 获取"专业中文翻译"菜单项的menu-item-icon div
                 const professionalTranslateIcon = professionalTranslateLi.querySelector('.menu-item-icon');
                 
                 if (translateIcon && professionalTranslateIcon) {
-                    // 替换内容
                     professionalTranslateIcon.innerHTML = translateIcon.innerHTML;
                     log('【调试】✅ 已将"专业中文翻译"的图标替换为"翻译"的图标');
-                    // 标记为已替换
-                    iconReplaced = true;
+                    state.iconReplaced = true;
                 }
             }
         }
         
-        // 按指定顺序排序li元素（仅排序一次）
-        let liSorted = false;
+        // 排序菜单项
         function sortMenuItems() {
-            // 如果已经排序过，不再重复排序
-            if (liSorted) {
-                return;
-            }
+            if (state.menuSorted) return;
             
-            // 指定的排序顺序
-            const sortOrder = [
-                '专业中文翻译',
-                '朗读',
-                '翻译',
-                '解释',
-                '修正语法',
-                '调整语气',
-                'AI 搜索',
-                '复制'
-            ];
-            
-            // 找到包含li的ul元素
             const ul = shadowRoot.querySelector('.semi-dropdown-menu');
             if (!ul) {
                 log('【调试】未找到.semi-dropdown-menu元素');
                 return;
             }
             
-            // 获取所有li元素
             const lis = Array.from(ul.querySelectorAll('li'));
             if (lis.length === 0) {
                 log('【调试】未找到li元素');
@@ -181,8 +178,8 @@
             
             // 按指定顺序排序
             lisWithNames.sort((a, b) => {
-                const indexA = sortOrder.indexOf(a.name);
-                const indexB = sortOrder.indexOf(b.name);
+                const indexA = config.sortOrder.indexOf(a.name);
+                const indexB = config.sortOrder.indexOf(b.name);
                 // 不在排序列表中的元素放在最后
                 if (indexA === -1 && indexB === -1) return 0;
                 if (indexA === -1) return 1;
@@ -196,32 +193,32 @@
             });
             
             log('【调试】✅ 已按指定顺序排序菜单项');
-            // 标记为已排序
-            liSorted = true;
+            state.menuSorted = true;
         }
 
-        // 立即执行+监听动态变化
-        updateLiTitles();
-        setupTooltipPositioning();
-        replaceMenuItemIcon();
-        sortMenuItems();
-        
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach(mutation => {
-                if (mutation.addedNodes.length > 0) {
-                    updateLiTitles();
-                    setupTooltipPositioning();
-                    replaceMenuItemIcon();
-                    sortMenuItems();
-                }
-            });
-        });
+        // 初始化函数
+        function init() {
+            if (state.initialized) return;
+            
+            updateMenuItems();
+            setupTooltipPositioning();
+            replaceMenuItemIcon();
+            sortMenuItems();
+            
+            state.initialized = true;
+        }
 
-        observer.observe(shadowRoot, {
-            childList: true,
-            subtree: true
-        });
-        log('【调试】✅ li title监听已启动（含去重逻辑和气泡定位）');
+        // 立即执行初始化
+        init();
+        
+        return {
+            update: function() {
+                updateMenuItems();
+                setupTooltipPositioning();
+                replaceMenuItemIcon();
+                sortMenuItems();
+            }
+        };
     }
 
     async function autoShowMenuAndInjectStyle() {
@@ -259,10 +256,18 @@
             // 首次检查
             monitorDropdownButton();
 
-            // 持续监听shadowRoot，当dropdown_icon_container元素出现或变化时检查
+            // 初始化菜单项管理
+            const menuManager = initializeMenuItems(shadowRoot);
+            
+            // 持续监听shadowRoot，处理所有变化
             const observer = new MutationObserver((mutations) => {
-                log('DOM发生变化，检查dropdown_icon_container元素');
-                monitorDropdownButton();
+                // 检查是否有新节点添加
+                const hasNewNodes = mutations.some(mutation => mutation.addedNodes.length > 0);
+                if (hasNewNodes) {
+                    log('DOM发生变化，更新菜单状态');
+                    monitorDropdownButton();
+                    menuManager.update();
+                }
             });
 
             // 监听shadowRoot的所有变化
@@ -272,9 +277,7 @@
                 attributes: true
             });
 
-            log('已启动持续监听，监控dropdown_icon_container元素的变化');
-
-            setupLiTitleObserver(shadowRoot); // 核心：启动title监听
+            log('已启动持续监听，监控菜单状态变化');
 
         } catch (err) {
             log('autoShowMenuAndInjectStyle执行失败: ' + err.message);
