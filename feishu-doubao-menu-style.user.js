@@ -11,18 +11,18 @@
 
 (function () {
     'use strict';
-    
+
     // 使用Tampermonkey的GM_log功能
     function log(message) {
         if (typeof GM_log === 'function') {
             GM_log(message);
         }
     }
-    
+
     // 输出初始日志
     log('豆包菜单样式脚本开始执行');
     log('当前URL: ' + window.location.href);
-    
+
     // 核心函数：等待元素加载并执行操作（移除超时，一直监听直到找到元素）
     function waitForElement(selector, root = document) {
         return new Promise((resolve) => { // 移除reject，只保留resolve
@@ -84,7 +84,7 @@
                     const rect = item.getBoundingClientRect();
                     const tooltipX = rect.left + rect.width / 2;
                     const tooltipY = rect.top;
-                    
+
                     // 设置气泡位置
                     item.style.setProperty('--tooltip-x', tooltipX + 'px');
                     item.style.setProperty('--tooltip-y', tooltipY + 'px');
@@ -95,7 +95,7 @@
         // 立即执行+监听动态变化
         updateLiTitles();
         setupTooltipPositioning();
-        
+
         const observer = new MutationObserver((mutations) => {
             mutations.forEach(mutation => {
                 if (mutation.addedNodes.length > 0) {
@@ -126,13 +126,13 @@
             function monitorDropdownButton() {
                 // 查找dropdown_icon_container元素
                 const dropdownBtn = shadowRoot.querySelector('[class*="dropdown_icon_container"]');
-                
+
                 if (dropdownBtn) {
                     log('找到dropdown_icon_container元素，检查是否需要点击');
-                    
+
                     // 检查是否存在semi-portal-inner
                     const portalInner = shadowRoot.querySelector('.semi-portal-inner');
-                    
+
                     if (!portalInner) {
                         // 如果不存在semi-portal-inner，点击下拉按钮
                         dropdownBtn.click();
@@ -143,23 +143,23 @@
                     }
                 }
             }
-            
+
             // 首次检查
             monitorDropdownButton();
-            
+
             // 持续监听shadowRoot，当dropdown_icon_container元素出现或变化时检查
             const observer = new MutationObserver((mutations) => {
                 log('DOM发生变化，检查dropdown_icon_container元素');
                 monitorDropdownButton();
             });
-            
+
             // 监听shadowRoot的所有变化
             observer.observe(shadowRoot, {
                 childList: true,
                 subtree: true,
                 attributes: true
             });
-            
+
             log('已启动持续监听，监控dropdown_icon_container元素的变化');
 
             setupLiTitleObserver(shadowRoot); // 核心：启动title监听
@@ -294,13 +294,13 @@
         min-height: 16px !important;
         max-height: 16px !important;
       }
-      
+
       /* 自定义title气泡样式 */
       .semi-dropdown-item {
         position: relative !important;
         z-index: 1000 !important;
       }
-      
+
       /* 使用固定定位来突破父元素限制 */
       .semi-dropdown-item:hover::before {
         content: attr(title) !important;
@@ -316,11 +316,25 @@
         z-index: 999999 !important;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
         pointer-events: none !important;
-        /* 使用transform定位 */
+        /* 使用transform定位，再往上移5个px */
         transform: translate(-50%, -100%) !important;
-        margin-top: -8px !important;
+        margin-top: -13px !important;
       }
       
+      /* 禁用原生的title信息显示 */
+      .semi-dropdown-item {
+        pointer-events: auto !important;
+      }
+      
+      /* 阻止原生title显示 */
+      .semi-dropdown-item[title] {
+        position: relative !important;
+      }
+      
+      .semi-dropdown-item[title]:hover {
+        overflow: hidden !important;
+      }
+
       .semi-dropdown-item:hover::after {
         content: '' !important;
         position: fixed !important;
@@ -335,7 +349,7 @@
         transform: translate(-50%, -100%) !important;
         margin-top: -2px !important;
       }
-      
+
       /* 确保所有可能的父元素都不会遮挡气泡 */
       .semi-dropdown-menu,
       .semi-tooltip-content,
@@ -346,12 +360,6 @@
         z-index: 1000 !important;
         position: relative !important;
       }
-      
-      /* 确保没有元素裁剪气泡 */
-      .semi-dropdown-item * {
-        overflow: visible !important;
-      }
-
 
     `;
         shadowRoot.appendChild(style);
@@ -366,7 +374,7 @@
     } catch (err) {
         log('执行主逻辑失败: ' + err.message);
     }
-    
+
     // 添加一个定时器，确保脚本完全执行
     setTimeout(() => {
         log('脚本执行完成（定时器）');
