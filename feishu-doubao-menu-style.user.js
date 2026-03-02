@@ -4,13 +4,16 @@
 // @version      0.2
 // @description  自动点击展开菜单，横向排列LI元素，隐藏菜单文字，调整semi-portal-inner位置
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=doubao.com
-// @author       You
+// @author       luantu
 // @match        *://*.feishu.cn/*
 // @grant        none
 // ==/UserScript==
 
 (function () {
     'use strict';
+    
+    console.log('豆包菜单样式脚本开始执行');
+    console.log('当前URL:', window.location.href);
 
     // 核心函数：等待元素加载并执行操作（移除超时，一直监听直到找到元素）
     function waitForElement(selector, root = document) {
@@ -112,7 +115,6 @@
             } else if (dropdownBtn && portalInner) {
                 console.log('.semi-portal-inner已存在，无需点击下拉按钮');
             }
-
 
             setupLiTitleObserver(shadowRoot); // 核心：启动title监听
 
