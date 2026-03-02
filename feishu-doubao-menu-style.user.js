@@ -283,5 +283,17 @@
     }
 
     // 执行主逻辑
-    autoShowMenuAndInjectStyle();
+    try {
+        log('开始执行autoShowMenuAndInjectStyle函数');
+        autoShowMenuAndInjectStyle();
+        log('autoShowMenuAndInjectStyle函数执行完成');
+    } catch (err) {
+        error('执行主逻辑失败:', err);
+    }
+    
+    // 添加一个定时器，确保脚本完全执行
+    setTimeout(() => {
+        log('脚本执行完成（定时器）');
+        error('脚本执行完成（定时器error级别）');
+    }, 2000);
 })();
