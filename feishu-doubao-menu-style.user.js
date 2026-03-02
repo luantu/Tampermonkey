@@ -13,22 +13,16 @@
     'use strict';
     
     // 使用Tampermonkey的GM_log功能
-    function gmLog(message) {
+    function log(message) {
         if (typeof GM_log === 'function') {
             GM_log(message);
         }
-        // 同时使用error级别日志确保在控制台显示
-        console.error('[GM_log]', message);
     }
     
     // 输出初始日志
-    gmLog('豆包菜单样式脚本开始执行');
-    gmLog('当前URL: ' + window.location.href);
+    log('豆包菜单样式脚本开始执行');
+    log('当前URL: ' + window.location.href);
     
-    // 测试GM_log
-    gmLog('这是一条GM_log日志');
-    console.error('这是一条error日志（用于测试）');
-
     // 核心函数：等待元素加载并执行操作（移除超时，一直监听直到找到元素）
     function waitForElement(selector, root = document) {
         return new Promise((resolve) => { // 移除reject，只保留resolve
@@ -54,31 +48,30 @@
     function setupLiTitleObserver(shadowRoot) {
         function updateLiTitles() {
             const menuItemNames = shadowRoot.querySelectorAll('.menu-item-name');
-            gmLog(`【调试】找到.menu-item-name元素数量：${menuItemNames.length}`);
+            log(`【调试】找到.menu-item-name元素数量：${menuItemNames.length}`);
 
             menuItemNames.forEach(span => {
                 const li = span.closest('li');
                 if (!li) {
-                    gmLog('【调试】未找到.menu-item-name对应的li元素');
+                    log('【调试】未找到.menu-item-name对应的li元素');
                     return;
                 }
 
                 const titleText = span.textContent.trim();
                 if (!titleText) {
-                    gmLog('【调试】.menu-item-name无文本内容');
+                    log('【调试】.menu-item-name无文本内容');
                     return;
                 }
 
                 // 核心优化：检查li是否已有非空title，有则跳过
                 const existingTitle = li.getAttribute('title');
                 if (existingTitle && existingTitle.trim() === titleText) {
-                    gmLog(`【调试】🔄 跳过重复设置：li已有title="${titleText}"`);
                     return; // 已有相同title，直接跳过
                 }
 
                 // 无title/title为空/title不一致时，才设置
                 li.setAttribute('title', titleText);
-                gmLog(`【调试】✅ 设置title成功：${titleText}，li的class：${li.className}`);
+                log(`【调试】✅ 设置title成功：${titleText}，li的class：${li.className}`);
             });
         }
 
@@ -94,7 +87,7 @@
             childList: true,
             subtree: true
         });
-        gmLog('【调试】✅ li title监听已启动（含去重逻辑）');
+        log('【调试】✅ li title监听已启动（含去重逻辑）');
     }
 
     async function autoShowMenuAndInjectStyle() {
@@ -105,7 +98,7 @@
 
             // 核心修改1：只要shadowRoot存在，立即注入CSS（无需等待其他元素）
             injectCSS(shadowRoot);
-            gmLog('shadowRoot已找到，已优先注入CSS样式');
+            log('shadowRoot已找到，已优先注入CSS样式');
 
             // 步骤2：检查.semi-portal-inner是否存在
             let portalInner = null;
@@ -118,22 +111,81 @@
                 }
             } catch (e) {
                 // 即使portalInner没找到，也不影响后续逻辑
-                gmLog('.semi-portal-inner暂未找到，准备点击下拉按钮');
+                log('.semi-portal-inner暂未找到，准备点击下拉按钮');
             }
 
             // 核心修改2：仅当.semi-portal-inner不存在时，才点击下拉按钮
             const dropdownBtn = await waitForElement('[class*="dropdown_icon_container"]', shadowRoot);
-            if (dropdownBtn && !portalInner) {
-                dropdownBtn.click(); // 仅不存在portalInner时点击
-                gmLog('.semi-portal-inner不存在，已点击下拉按钮展开菜单');
-            } else if (dropdownBtn && portalInner) {
-                gmLog('.semi-portal-inner已存在，无需点击下拉按钮');
+            
+            // 检查并点击下拉按钮的函数
+            function checkAndClickDropdown() {
+                const currentPortalInner = shadowRoot.querySelector('.semi-portal-inner');
+                if (dropdownBtn && !currentPortalInner) {
+                    dropdownBtn.click(); // 仅不存在portalInner时点击
+                    log('.semi-portal-inner不存在，已点击下拉按钮展开菜单');
+                } else if (dropdownBtn && currentPortalInner) {
+                    log('.semi-portal-inner已存在，无需点击下拉按钮');
+                }
+            }
+            
+            // 首次检查
+            checkAndClickDropdown();
+            
+            // 持续监听dropdownBtn元素的变化
+            const dropdownObserver = new MutationObserver((mutations) => {
+                log('dropdown_icon_container元素发生变化，重新检查是否需要点击');
+                checkAndClickDropdown();
+            });
+            
+            // 监听dropdownBtn元素的变化
+            dropdownObserver.observe(dropdownBtn, {
+                attributes: true,
+                childList: true,
+                subtree: true
+            });
+            
+            log('已启动dropdown_icon_container元素监听');
+            
+            // 同时监听semi-portal-inner元素的变化，以便在菜单关闭时重新点击
+            const portalObserver = new MutationObserver((mutations) => {
+                log('semi-portal-inner元素发生变化，重新检查是否需要点击');
+                checkAndClickDropdown();
+            });
+            
+            // 监听semi-portal-inner元素的变化（如果存在）
+            if (portalInner) {
+                portalObserver.observe(portalInner, {
+                    attributes: true,
+                    childList: true,
+                    subtree: true
+                });
+                log('已启动semi-portal-inner元素监听');
+            } else {
+                // 如果semi-portal-inner不存在，监听shadowRoot以捕获其创建
+                const shadowRootObserver = new MutationObserver((mutations) => {
+                    const newPortalInner = shadowRoot.querySelector('.semi-portal-inner');
+                    if (newPortalInner) {
+                        log('semi-portal-inner元素已创建，开始监听');
+                        portalObserver.observe(newPortalInner, {
+                            attributes: true,
+                            childList: true,
+                            subtree: true
+                        });
+                        shadowRootObserver.disconnect();
+                    }
+                });
+                
+                shadowRootObserver.observe(shadowRoot, {
+                    childList: true,
+                    subtree: true
+                });
+                log('已启动shadowRoot监听，等待semi-portal-inner创建');
             }
 
             setupLiTitleObserver(shadowRoot); // 核心：启动title监听
 
         } catch (err) {
-            gmLog('autoShowMenuAndInjectStyle执行失败: ' + err.message);
+            log('autoShowMenuAndInjectStyle执行失败: ' + err.message);
         }
     }
 
@@ -266,21 +318,20 @@
 
     `;
         shadowRoot.appendChild(style);
-        gmLog('CSS 样式已注入 Shadow DOM');
+        log('CSS 样式已注入 Shadow DOM');
     }
 
     // 执行主逻辑
     try {
-        gmLog('开始执行autoShowMenuAndInjectStyle函数');
+        log('开始执行autoShowMenuAndInjectStyle函数');
         autoShowMenuAndInjectStyle();
-        gmLog('autoShowMenuAndInjectStyle函数执行完成');
+        log('autoShowMenuAndInjectStyle函数执行完成');
     } catch (err) {
-        gmLog('执行主逻辑失败: ' + err.message);
+        log('执行主逻辑失败: ' + err.message);
     }
     
     // 添加一个定时器，确保脚本完全执行
     setTimeout(() => {
-        gmLog('脚本执行完成（定时器）');
-        console.error('脚本执行完成（定时器error级别）');
+        log('脚本执行完成（定时器）');
     }, 2000);
 })();
