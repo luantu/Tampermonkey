@@ -102,15 +102,43 @@
             });
         }
 
+        // 替换菜单项图标
+        function replaceMenuItemIcon() {
+            // 找到menu-item-name为"翻译"的li元素
+            const translateLi = Array.from(shadowRoot.querySelectorAll('.menu-item-name')).find(span => 
+                span.textContent.trim() === '翻译'
+            )?.closest('li');
+            
+            // 找到menu-item-name为"专业中文翻译"的li元素
+            const professionalTranslateLi = Array.from(shadowRoot.querySelectorAll('.menu-item-name')).find(span => 
+                span.textContent.trim() === '专业中文翻译'
+            )?.closest('li');
+            
+            if (translateLi && professionalTranslateLi) {
+                // 获取"翻译"菜单项的menu-item-icon div
+                const translateIcon = translateLi.querySelector('.menu-item-icon');
+                // 获取"专业中文翻译"菜单项的menu-item-icon div
+                const professionalTranslateIcon = professionalTranslateLi.querySelector('.menu-item-icon');
+                
+                if (translateIcon && professionalTranslateIcon) {
+                    // 替换内容
+                    professionalTranslateIcon.innerHTML = translateIcon.innerHTML;
+                    log('【调试】✅ 已将"专业中文翻译"的图标替换为"翻译"的图标');
+                }
+            }
+        }
+
         // 立即执行+监听动态变化
         updateLiTitles();
         setupTooltipPositioning();
-
+        replaceMenuItemIcon();
+        
         const observer = new MutationObserver((mutations) => {
             mutations.forEach(mutation => {
                 if (mutation.addedNodes.length > 0) {
                     updateLiTitles();
                     setupTooltipPositioning();
+                    replaceMenuItemIcon();
                 }
             });
         });
