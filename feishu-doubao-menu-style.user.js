@@ -69,9 +69,10 @@
                     return; // 已有相同title，直接跳过
                 }
 
-                // 无title/title为空/title不一致时，才设置
-                li.setAttribute('title', titleText);
-                log(`【调试】✅ 设置title成功：${titleText}，li的class：${li.className}`);
+                // 移除原生title属性，使用自定义数据属性存储title内容
+                li.removeAttribute('title');
+                li.setAttribute('data-title', titleText);
+                log(`【调试】✅ 设置data-title成功：${titleText}，li的class：${li.className}`);
             });
         }
 
@@ -303,7 +304,7 @@
 
       /* 使用固定定位来突破父元素限制 */
       .semi-dropdown-item:hover::before {
-        content: attr(title) !important;
+        content: attr(data-title) !important;
         position: fixed !important;
         left: var(--tooltip-x, 100px) !important;
         top: var(--tooltip-y, 100px) !important;
@@ -321,18 +322,10 @@
         margin-top: -12px !important;
       }
       
-      /* 禁用原生的title信息显示 */
-      .semi-dropdown-item {
-        pointer-events: auto !important;
-      }
-      
-      /* 阻止原生title显示 */
-      .semi-dropdown-item[title] {
-        position: relative !important;
-      }
-      
-      .semi-dropdown-item[title]:hover {
-        overflow: hidden !important;
+      /* 确保只有带有data-title属性的元素显示气泡 */
+      .semi-dropdown-item:not([data-title]):hover::before,
+      .semi-dropdown-item:not([data-title]):hover::after {
+        display: none !important;
       }
 
       .semi-dropdown-item:hover::after {
