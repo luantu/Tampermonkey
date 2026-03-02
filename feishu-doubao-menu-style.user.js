@@ -75,13 +75,32 @@
             });
         }
 
+        // 添加鼠标移动事件来动态定位气泡
+        function setupTooltipPositioning() {
+            const menuItems = shadowRoot.querySelectorAll('.semi-dropdown-item');
+            menuItems.forEach(item => {
+                item.addEventListener('mousemove', (e) => {
+                    // 计算气泡位置
+                    const rect = item.getBoundingClientRect();
+                    const tooltipX = rect.left + rect.width / 2;
+                    const tooltipY = rect.top;
+                    
+                    // 设置气泡位置
+                    item.style.setProperty('--tooltip-x', tooltipX + 'px');
+                    item.style.setProperty('--tooltip-y', tooltipY + 'px');
+                });
+            });
+        }
+
         // 立即执行+监听动态变化
         updateLiTitles();
+        setupTooltipPositioning();
         
         const observer = new MutationObserver((mutations) => {
             mutations.forEach(mutation => {
                 if (mutation.addedNodes.length > 0) {
                     updateLiTitles();
+                    setupTooltipPositioning();
                 }
             });
         });
@@ -282,44 +301,55 @@
         z-index: 1000 !important;
       }
       
-      /* 使用相对定位和z-index来确保气泡显示 */
+      /* 使用固定定位来突破父元素限制 */
       .semi-dropdown-item:hover::before {
         content: attr(title) !important;
-        position: absolute !important;
-        bottom: 100% !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
+        position: fixed !important;
+        left: var(--tooltip-x, 100px) !important;
+        top: var(--tooltip-y, 100px) !important;
         background-color: rgba(0, 0, 0, 0.9) !important;
         color: white !important;
         padding: 6px 10px !important;
         border-radius: 6px !important;
         font-size: 12px !important;
         white-space: nowrap !important;
-        z-index: 99999 !important;
-        margin-bottom: 8px !important;
+        z-index: 999999 !important;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
         pointer-events: none !important;
+        /* 使用transform定位 */
+        transform: translate(-50%, -100%) !important;
+        margin-top: -8px !important;
       }
       
       .semi-dropdown-item:hover::after {
         content: '' !important;
-        position: absolute !important;
-        bottom: 100% !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
+        position: fixed !important;
+        left: var(--tooltip-x, 100px) !important;
+        top: var(--tooltip-y, 100px) !important;
         border-width: 5px !important;
         border-style: solid !important;
         border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent !important;
-        margin-bottom: -10px !important;
-        z-index: 99998 !important;
+        z-index: 999998 !important;
         pointer-events: none !important;
+        /* 使用transform定位 */
+        transform: translate(-50%, -100%) !important;
+        margin-top: -2px !important;
       }
       
-      /* 确保气泡不会被父元素遮挡 */
+      /* 确保所有可能的父元素都不会遮挡气泡 */
       .semi-dropdown-menu,
-      .semi-tooltip-content {
+      .semi-tooltip-content,
+      .cici-ext-container,
+      [class*="dropdown_icon_container"],
+      [id*="flow-ext-feishu-toolbar-"] {
         overflow: visible !important;
         z-index: 1000 !important;
+        position: relative !important;
+      }
+      
+      /* 确保没有元素裁剪气泡 */
+      .semi-dropdown-item * {
+        overflow: visible !important;
       }
 
 
