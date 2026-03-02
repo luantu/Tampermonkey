@@ -75,11 +75,37 @@
             });
         }
 
+        // 添加鼠标移动事件来动态定位气泡
+        function setupTooltipPositioning() {
+            const menuItems = shadowRoot.querySelectorAll('.semi-dropdown-item');
+            menuItems.forEach(item => {
+                item.addEventListener('mousemove', (e) => {
+                    const rect = item.getBoundingClientRect();
+                    const tooltip = item.querySelector('::before');
+                    
+                    // 计算气泡位置
+                    const tooltipTop = rect.top - 30; // 上方30px
+                    const tooltipLeft = rect.left + (rect.width / 2) - 50; // 水平居中，减去气泡宽度的一半
+                    
+                    // 设置气泡位置
+                    item.style.setProperty('--tooltip-top', tooltipTop + 'px');
+                    item.style.setProperty('--tooltip-left', tooltipLeft + 'px');
+                    item.style.setProperty('--arrow-top', (tooltipTop + 20) + 'px');
+                    item.style.setProperty('--arrow-left', (rect.left + rect.width / 2) + 'px');
+                });
+            });
+        }
+
         // 立即执行+监听动态变化
         updateLiTitles();
+        setupTooltipPositioning();
+        
         const observer = new MutationObserver((mutations) => {
             mutations.forEach(mutation => {
-                if (mutation.addedNodes.length > 0) updateLiTitles();
+                if (mutation.addedNodes.length > 0) {
+                    updateLiTitles();
+                    setupTooltipPositioning();
+                }
             });
         });
 
@@ -87,7 +113,7 @@
             childList: true,
             subtree: true
         });
-        log('【调试】✅ li title监听已启动（含去重逻辑）');
+        log('【调试】✅ li title监听已启动（含去重逻辑和气泡定位）');
     }
 
     async function autoShowMenuAndInjectStyle() {
@@ -279,47 +305,58 @@
         z-index: 1000 !important;
       }
       
+      /* 创建一个包装器来处理气泡 */
+      .semi-dropdown-item {
+        position: relative !important;
+      }
+      
+      /* 使用固定定位来突破父元素限制 */
       .semi-dropdown-item:hover::before {
         content: attr(title) !important;
-        position: absolute !important;
-        bottom: 100% !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
+        position: fixed !important;
+        transform: none !important;
         background-color: rgba(0, 0, 0, 0.9) !important;
         color: white !important;
         padding: 6px 10px !important;
         border-radius: 6px !important;
         font-size: 12px !important;
         white-space: nowrap !important;
-        z-index: 99999 !important;
-        margin-bottom: 8px !important;
+        z-index: 999999 !important;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
         pointer-events: none !important;
+        /* 使用CSS变量设置位置 */
+        top: var(--tooltip-top, 100px) !important;
+        left: var(--tooltip-left, 100px) !important;
       }
       
       .semi-dropdown-item:hover::after {
         content: '' !important;
-        position: absolute !important;
-        bottom: 100% !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
+        position: fixed !important;
+        transform: none !important;
         border-width: 5px !important;
         border-style: solid !important;
         border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent !important;
-        margin-bottom: -10px !important;
-        z-index: 99998 !important;
+        z-index: 999998 !important;
         pointer-events: none !important;
+        /* 使用CSS变量设置位置 */
+        top: var(--arrow-top, 120px) !important;
+        left: var(--arrow-left, 150px) !important;
       }
       
-      /* 确保气泡不会被父元素遮挡 */
-      .semi-dropdown-menu {
+      /* 确保所有父元素都不会遮挡气泡 */
+      .semi-dropdown-menu,
+      .semi-tooltip-content,
+      .cici-ext-container,
+      [class*="dropdown_icon_container"],
+      [id*="flow-ext-feishu-toolbar-"] {
         overflow: visible !important;
         z-index: 1000 !important;
+        position: relative !important;
       }
       
-      .semi-tooltip-content {
+      /* 确保没有元素裁剪气泡 */
+      * {
         overflow: visible !important;
-        z-index: 1000 !important;
       }
 
 
