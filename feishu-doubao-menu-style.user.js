@@ -12,18 +12,35 @@
 (function () {
     'use strict';
     
-    // 确保日志输出到主控制台
-    const log = console.log.bind(console);
-    const error = console.error.bind(console);
-    const warn = console.warn.bind(console);
+    // 确保使用最原始的console对象
+    const originalConsole = window.console || console;
+    const log = originalConsole.log.bind(originalConsole);
+    const error = originalConsole.error.bind(originalConsole);
+    const warn = originalConsole.warn.bind(originalConsole);
+    const info = originalConsole.info.bind(originalConsole);
     
+    // 使用多种方式输出日志
     log('豆包菜单样式脚本开始执行');
-    log('当前URL:', window.location.href);
+    info('当前URL:', window.location.href);
     
     // 测试不同级别的日志
     log('这是一条log日志');
+    info('这是一条info日志');
     warn('这是一条warn日志');
     error('这是一条error日志');
+    
+    // 尝试直接使用window.console
+    if (window.console) {
+        window.console.log('直接使用window.console.log');
+        window.console.info('直接使用window.console.info');
+        window.console.warn('直接使用window.console.warn');
+        window.console.error('直接使用window.console.error');
+    }
+    
+    // 尝试使用debug方法
+    if (originalConsole.debug) {
+        originalConsole.debug('使用console.debug');
+    }
 
     // 核心函数：等待元素加载并执行操作（移除超时，一直监听直到找到元素）
     function waitForElement(selector, root = document) {
