@@ -263,10 +263,26 @@
             
             // 持续监听shadowRoot，处理所有变化
             const observer = new MutationObserver((mutations) => {
-                // 检查是否有实际的内容变化
+                // 检查是否有实际的内容变化（排除鼠标移动引起的变化）
                 let hasContentChange = false;
                 
                 mutations.forEach(mutation => {
+                    // 跳过与鼠标移动相关的属性变化
+                    if (mutation.type === 'attributes') {
+                        // 跳过style属性变化（可能是tooltip位置变化）
+                        if (mutation.attributeName === 'style') {
+                            // 检查是否是由tooltip定位引起的style变化
+                            const target = mutation.target;
+                            if (target.style && (target.style.getPropertyValue('--tooltip-x') || target.style.getPropertyValue('--tooltip-y'))) {
+                                return; // 跳过tooltip位置变化
+                            }
+                        }
+                        // 跳过class属性变化（可能是hover状态变化）
+                        else if (mutation.attributeName === 'class') {
+                            return; // 跳过hover状态变化
+                        }
+                    }
+                    
                     // 检查是否有新节点添加
                     if (mutation.addedNodes.length > 0) {
                         hasContentChange = true;
@@ -275,7 +291,7 @@
                     else if (mutation.removedNodes.length > 0) {
                         hasContentChange = true;
                     }
-                    // 检查是否有属性变化
+                    // 检查是否有其他属性变化
                     else if (mutation.type === 'attributes') {
                         hasContentChange = true;
                     }
