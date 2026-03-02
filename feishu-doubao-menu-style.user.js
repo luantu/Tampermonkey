@@ -80,9 +80,15 @@
                     return;
                 }
 
+                // 检查是否已经处理过该菜单项
+                if (li._menuItemProcessed) {
+                    return;
+                }
+
                 const titleText = span.textContent.trim();
                 if (!titleText) {
                     log('【调试】.menu-item-name无文本内容');
+                    li._menuItemProcessed = true;
                     return;
                 }
 
@@ -90,12 +96,7 @@
                 if (config.hiddenItems.includes(titleText)) {
                     li.setAttribute('style', 'display: none !important;');
                     log(`【调试】✅ 隐藏菜单项：${titleText}`);
-                    return;
-                }
-
-                // 检查li是否已有非空data-title，有则跳过
-                const existingTitle = li.getAttribute('data-title');
-                if (existingTitle && existingTitle.trim() === titleText) {
+                    li._menuItemProcessed = true;
                     return;
                 }
 
@@ -103,6 +104,7 @@
                 li.removeAttribute('title');
                 li.setAttribute('data-title', titleText);
                 log(`【调试】✅ 设置data-title成功：${titleText}，li的class：${li.className}`);
+                li._menuItemProcessed = true;
             });
         }
 
@@ -261,10 +263,26 @@
             
             // 持续监听shadowRoot，处理所有变化
             const observer = new MutationObserver((mutations) => {
-                // 检查是否有新节点添加
-                const hasNewNodes = mutations.some(mutation => mutation.addedNodes.length > 0);
-                if (hasNewNodes) {
-                    log('DOM发生变化，更新菜单状态');
+                // 检查是否有实际的内容变化
+                let hasContentChange = false;
+                
+                mutations.forEach(mutation => {
+                    // 检查是否有新节点添加
+                    if (mutation.addedNodes.length > 0) {
+                        hasContentChange = true;
+                    }
+                    // 检查是否有节点被移除
+                    else if (mutation.removedNodes.length > 0) {
+                        hasContentChange = true;
+                    }
+                    // 检查是否有属性变化
+                    else if (mutation.type === 'attributes') {
+                        hasContentChange = true;
+                    }
+                });
+                
+                if (hasContentChange) {
+                    log('DOM内容发生变化，更新菜单状态');
                     monitorDropdownButton();
                     menuManager.update();
                 }
