@@ -64,7 +64,7 @@
                 }
 
                 // 检查是否需要隐藏该li元素
-                const hiddenItems = ['润色语气']; // 要隐藏的菜单项名称
+                const hiddenItems = ['AI 搜索','调整语气','复制']; // 要隐藏的菜单项名称
                 if (hiddenItems.includes(titleText)) {
                     // 使用更强制的方式隐藏li元素，确保不会被其他样式覆盖
                     li.setAttribute('style', 'display: none !important;');
@@ -109,23 +109,23 @@
             if (iconReplaced) {
                 return;
             }
-            
+
             // 找到menu-item-name为"翻译"的li元素
-            const translateLi = Array.from(shadowRoot.querySelectorAll('.menu-item-name')).find(span => 
+            const translateLi = Array.from(shadowRoot.querySelectorAll('.menu-item-name')).find(span =>
                 span.textContent.trim() === '翻译'
             )?.closest('li');
-            
+
             // 找到menu-item-name为"专业中文翻译"的li元素
-            const professionalTranslateLi = Array.from(shadowRoot.querySelectorAll('.menu-item-name')).find(span => 
+            const professionalTranslateLi = Array.from(shadowRoot.querySelectorAll('.menu-item-name')).find(span =>
                 span.textContent.trim() === '专业中文翻译'
             )?.closest('li');
-            
+
             if (translateLi && professionalTranslateLi) {
                 // 获取"翻译"菜单项的menu-item-icon div
                 const translateIcon = translateLi.querySelector('.menu-item-icon');
                 // 获取"专业中文翻译"菜单项的menu-item-icon div
                 const professionalTranslateIcon = professionalTranslateLi.querySelector('.menu-item-icon');
-                
+
                 if (translateIcon && professionalTranslateIcon) {
                     // 替换内容
                     professionalTranslateIcon.innerHTML = translateIcon.innerHTML;
@@ -140,7 +140,7 @@
         updateLiTitles();
         setupTooltipPositioning();
         replaceMenuItemIcon();
-        
+
         const observer = new MutationObserver((mutations) => {
             mutations.forEach(mutation => {
                 if (mutation.addedNodes.length > 0) {
@@ -363,7 +363,7 @@
         transform: translate(-50%, -100%) !important;
         margin-top: -12px !important;
       }
-      
+
       /* 确保只有带有data-title属性的元素显示气泡 */
       .semi-dropdown-item:not([data-title]):hover::before,
       .semi-dropdown-item:not([data-title]):hover::after {
