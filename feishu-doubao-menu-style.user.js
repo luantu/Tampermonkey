@@ -218,8 +218,6 @@
                 updateMenuItems();
                 setupTooltipPositioning();
                 replaceMenuItemIcon();
-                // 重置排序状态，确保每次更新都能重新排序
-                state.menuSorted = false;
                 sortMenuItems();
             }
         };
@@ -255,18 +253,7 @@
                         log('.semi-portal-inner已存在，无需点击下拉按钮');
                     }
                     
-                    // 为按钮添加点击事件监听器，确保手动点击后也能执行菜单初始化
-                    if (!dropdownBtn._hasClickHandler) {
-                        dropdownBtn.addEventListener('click', () => {
-                            log('dropdown_icon_container按钮被手动点击，重新初始化菜单');
-                            // 延迟执行，确保菜单完全展开
-                            setTimeout(() => {
-                                menuManager.update();
-                            }, 100);
-                        });
-                        dropdownBtn._hasClickHandler = true;
-                        log('已为dropdown_icon_container按钮添加点击事件监听器');
-                    }
+
                 }
             }
 
@@ -277,7 +264,13 @@
             const menuManager = initializeMenuItems(shadowRoot);
             
             // 持续监听shadowRoot，处理所有变化
+            let isUpdating = false;
             const observer = new MutationObserver((mutations) => {
+                // 防止递归调用
+                if (isUpdating) {
+                    return;
+                }
+                
                 // 检查是否有实际的内容变化（排除鼠标移动引起的变化）
                 let hasContentChange = false;
                 
@@ -296,11 +289,21 @@
                         else if (mutation.attributeName === 'class') {
                             return; // 跳过hover状态变化
                         }
+                        // 跳过data-title属性变化（我们自己设置的）
+                        else if (mutation.attributeName === 'data-title') {
+                            return; // 跳过我们自己设置的data-title变化
+                        }
                     }
                     
                     // 检查是否有新节点添加
                     if (mutation.addedNodes.length > 0) {
-                        hasContentChange = true;
+                        // 跳过我们自己添加的元素
+                        const hasOurElements = Array.from(mutation.addedNodes).some(node => {
+                            return node._menuItemProcessed || node.id === 'custom-menu-style';
+                        });
+                        if (!hasOurElements) {
+                            hasContentChange = true;
+                        }
                     }
                     // 检查是否有节点被移除
                     else if (mutation.removedNodes.length > 0) {
@@ -314,8 +317,19 @@
                 
                 if (hasContentChange) {
                     log('DOM内容发生变化，更新菜单状态');
-                    monitorDropdownButton();
-                    menuManager.update();
+                    
+                    // 设置更新标记，防止递归
+                    isUpdating = true;
+                    
+                    try {
+                        monitorDropdownButton();
+                        menuManager.update();
+                    } finally {
+                        // 无论如何都要重置更新标记
+                        setTimeout(() => {
+                            isUpdating = false;
+                        }, 100);
+                    }
                 }
             });
 
