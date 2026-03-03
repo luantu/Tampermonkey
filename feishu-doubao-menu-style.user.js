@@ -25,6 +25,21 @@
     log('豆包菜单样式脚本开始执行');
     log('当前URL: ' + window.location.href);
 
+    // 检查是否在docx文档中
+    const mainContainer = document.getElementById('mainContainer');
+    if (mainContainer) {
+        const mainContainerClass = mainContainer.className;
+        log('mainContainer的class: ' + mainContainerClass);
+        if (!mainContainerClass.includes('suite-doc')) {
+            log('⚠️  不在docx文档中，退出脚本');
+            return;
+        }
+        log('✅ 在docx文档中，继续执行脚本');
+    } else {
+        log('⚠️  未找到mainContainer元素，退出脚本');
+        return;
+    }
+
     // 核心函数：等待元素加载并执行操作（移除超时，一直监听直到找到元素）
     function waitForElement(selector, root = document) {
         return new Promise((resolve) => { // 移除reject，只保留resolve
@@ -241,6 +256,27 @@
             injectCSS(shadowRoot);
             log('shadowRoot已找到，已优先注入CSS样式');
 
+            // 隐藏semi-portal元素
+            function hideSemiPortal() {
+                const semiPortal = shadowRoot.querySelector('.semi-portal');
+                if (semiPortal) {
+                    semiPortal.style.display = 'none';
+                    log('✅ 已隐藏semi-portal元素');
+                }
+            }
+
+            // 显示semi-portal元素
+            function showSemiPortal() {
+                const semiPortal = shadowRoot.querySelector('.semi-portal');
+                if (semiPortal) {
+                    semiPortal.style.display = '';
+                    log('✅ 已显示semi-portal元素');
+                }
+            }
+
+            // 首次执行隐藏操作
+            hideSemiPortal();
+
             // 核心逻辑：持续监控dropdown_icon_container元素的变化
             function monitorDropdownButton() {
                 // 查找dropdown_icon_container元素
@@ -316,6 +352,8 @@
                     monitorDropdownButton();
                     removeClickButtonDiv();
                     menuManager.update();
+                    // 所有处理完成后显示semi-portal元素
+                    setTimeout(showSemiPortal, 100);
                 }
             });
 
