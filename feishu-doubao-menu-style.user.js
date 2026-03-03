@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         豆包 - 自动展开并修改豆包菜单样式
+// @name         豆包 - 豆包插件在飞书文档内自动展开
 // @namespace    http://tampermonkey.net/
 // @version      0.2
 // @description  自动点击展开菜单，横向排列LI元素，隐藏菜单文字，调整semi-portal-inner位置
